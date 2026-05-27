@@ -1,3 +1,5 @@
+import type { GameLogEntry } from './gameLog';
+
 export interface CantStopPlayer {
     userId: string;
     username: string;
@@ -49,6 +51,8 @@ export interface CantStopRoom {
     disconnectTimers: Map<string, ReturnType<typeof setTimeout>>;
 
     currentGameId: string;
+    log: GameLogEntry[];
+    logSeq?: number;
 }
 
 export interface ConfiguredPlayer {

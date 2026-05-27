@@ -28,6 +28,7 @@ export function buildStateFor(room: CantStopRoom, viewerId: string | null) {
             afk: p.afk ?? false,
         })),
         spectator: viewerId ? !room.players.some(p => p.userId === viewerId) : true,
+        log: (room.log ?? []).slice(-100),
     };
 }
 

@@ -15,6 +15,7 @@ import { botPickSplit, botShouldStop } from './bot';
 import { saveCantStopResults } from './api';
 import { emitState } from './state';
 import { CantStopRoom } from './types';
+import { pushLog } from './gameLog';
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ function rollAndStart(code: string): void {
     if (!player) return;
     room.dice = rollDice();
     room.splits = computeSplits(room.dice, room, player);
+    pushLog(room, 'move', `${player.username} lance les dés : ${room.dice.join(' ')}`);
     if (!hasLegalSplit(room, player)) {
         handleBust(code);
         return;
@@ -75,6 +77,7 @@ function handleBust(code: string): void {
     if (!player) return;
     room.activeMarkers = {};
     room.phase = 'busted';
+    pushLog(room, 'attack', `${player.username} se plante (bust) — progression du tour perdue`);
     emitState(io, room);
     io.to(code).emit('cant_stop:busted', { userId: player.userId, username: player.username });
     setTimeout(() => {
@@ -90,6 +93,8 @@ function endGame(code: string, winnerUserId: string | null): void {
     if (!room) return;
     room.phase = 'ended';
     room.winnerUserId = winnerUserId;
+    const w = room.players.find(p => p.userId === winnerUserId);
+    if (w) pushLog(room, 'coup', `${w.username} remporte la partie !`);
     clearTimer(code);
     emitState(io, room);
     try {
@@ -150,8 +155,10 @@ function applyPickSplit(code: string, splitIndex: number): void {
         return;
     }
     const { claimedNow } = applySplit(split, room, player);
+    pushLog(room, 'move', `${player.username} avance ses pions`);
     if (claimedNow.length > 0) {
         for (const col of claimedNow) {
+            pushLog(room, 'coup', `${player.username} verrouille la colonne ${col} !`);
             io.to(code).emit('cant_stop:columnClaimed', { userId: player.userId, username: player.username, column: col });
         }
         if (checkVictory(room, player)) {
@@ -171,6 +178,7 @@ function doRoll(code: string): void {
     if (!player?.alive) return;
     room.dice = rollDice();
     room.splits = computeSplits(room.dice, room, player);
+    pushLog(room, 'move', `${player.username} lance les dés : ${room.dice.join(' ')}`);
     if (!hasLegalSplit(room, player)) {
         handleBust(code);
         return;
@@ -187,6 +195,7 @@ function doStop(code: string): void {
     const player = room.players[room.currentPlayerIndex];
     if (!player?.alive) return;
     bankMarkers(room, player);
+    pushLog(room, 'defend', `${player.username} s'arrête et sécurise sa progression`);
     if (checkVictory(room, player)) {
         endGame(code, player.userId);
         return;
@@ -206,6 +215,7 @@ timerCallbacks.onTimeout = (code: string) => {
         // Mark player as AFK, eliminate.
         player.alive = false;
         player.afk = true;
+        pushLog(room, 'system', `${player.username} exclu (inactivité)`);
         io.to(code).emit('cant_stop:playerKicked', { userId: player.userId, username: player.username, reason: 'inactivity' });
     }
     if (aliveCount(room) <= 1) {
@@ -275,6 +285,7 @@ io.on('connection', socket => {
         if (!player || !player.alive) return;
         player.alive = false;
         player.abandon = true;
+        pushLog(room, 'system', `${player.username} abandonne la partie`);
         io.to(code).emit('cant_stop:playerKicked', { userId: player.userId, username: player.username, reason: 'surrender' });
         if (aliveCount(room) <= 1) {
             const winner = room.players.find(p => p.alive) ?? null;

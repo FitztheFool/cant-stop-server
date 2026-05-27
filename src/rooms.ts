@@ -23,6 +23,8 @@ export function createRoom(code: string, players: ConfiguredPlayer[], columnsToW
         socketIds: new Map(),
         disconnectTimers: new Map(),
         currentGameId: crypto.randomUUID(),
+        log: [],
+        logSeq: 0,
     };
     return rooms[code];
 }
