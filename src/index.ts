@@ -15,7 +15,7 @@ import { botPickSplit, botShouldStop } from './bot';
 import { saveCantStopResults } from './api';
 import { emitState } from './state';
 import { CantStopRoom } from './types';
-import { pushLog } from './gameLog';
+import { pushLog } from '@kwizar/shared';
 
 dotenv.config();
 
