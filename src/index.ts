@@ -109,6 +109,29 @@ function aliveCount(room: CantStopRoom): number {
     return room.players.filter(p => p.alive).length;
 }
 
+function humansAliveCount(room: CantStopRoom): number {
+    return room.players.filter(p => p.alive && !isBot(p.userId)).length;
+}
+
+/** End the game if the lineup no longer makes sense for a human:
+ *  - no human is still in (would force them to watch a bot-only match)
+ *  - one human left with zero bots (no opponent)
+ *  In those cases, pick a winner from the alive players based on claimed
+ *  columns (fallback: first alive). Returns true if the game was ended. */
+function endIfNoMeaningfulMatch(code: string): boolean {
+    const room = rooms[code];
+    if (!room) return false;
+    const alive = room.players.filter(p => p.alive);
+    const humans = alive.filter(p => !isBot(p.userId));
+    const bots = alive.filter(p => isBot(p.userId));
+    const noContest = humans.length === 0 || (humans.length === 1 && bots.length === 0);
+    if (!noContest) return false;
+    const leader = [...alive].sort((a, b) => b.claimed.length - a.claimed.length)[0];
+    pushLog(room, 'system', 'Fin de partie — plus assez de joueurs en lice');
+    endGame(code, leader?.userId ?? null);
+    return true;
+}
+
 // ── Bot turn ──────────────────────────────────────────────────────────────────
 
 function scheduleBotTurnIfNeeded(code: string): void {
@@ -223,6 +246,7 @@ timerCallbacks.onTimeout = (code: string) => {
         endGame(code, winner?.userId ?? null);
         return;
     }
+    if (endIfNoMeaningfulMatch(code)) return;
     room.activeMarkers = {};
     nextTurn(room);
     rollAndStart(code);
@@ -292,6 +316,7 @@ io.on('connection', socket => {
             endGame(code, winner?.userId ?? null);
             return;
         }
+        if (endIfNoMeaningfulMatch(code)) return;
         if (room.players[room.currentPlayerIndex]?.userId === userId) {
             room.activeMarkers = {};
             nextTurn(room);
@@ -324,6 +349,7 @@ io.on('connection', socket => {
                 endGame(code, winner?.userId ?? null);
                 return;
             }
+            if (endIfNoMeaningfulMatch(code)) return;
             if (r.players[r.currentPlayerIndex]?.userId === userId) {
                 r.activeMarkers = {};
                 nextTurn(r);
