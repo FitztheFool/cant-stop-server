@@ -45,7 +45,7 @@ lobbySocket.on('cant_stop:configure', ({ lobbyId: code, players, options, fresh 
     }
     const columnsToWin = options?.columnsToWin ?? DEFAULT_COLUMNS_TO_WIN;
     const room = createRoom(code, players, columnsToWin);
-    console.log(`[CantStop] Room created: ${code} (${players.length} players, columnsToWin=${columnsToWin})`);
+    console.log(`[CANT_STOP] Room created: ${code} (${players.length} players, columnsToWin=${columnsToWin})`);
     rollAndStart(code);
     if (ack) ack();
 });
@@ -100,7 +100,7 @@ function endGame(code: string, winnerUserId: string | null): void {
     try {
         saveCantStopResults(room, winnerUserId, room.currentGameId);
     } catch (e) {
-        console.error('[CantStop] saveResults failed', e);
+        console.error('[CANT_STOP] saveResults failed', e);
     }
     io.to(code).emit('cant_stop:ended', { winnerUserId });
 }
@@ -364,5 +364,5 @@ io.on('connection', socket => {
 
 const PORT = process.env.PORT ?? 10013;
 server.listen(PORT, () => {
-    console.log(`[CantStop] listening on :${PORT}`);
+    console.log(`[CANT_STOP] listening on port ${PORT}`);
 });
