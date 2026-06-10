@@ -98,7 +98,7 @@ function endGame(code: string, winnerUserId: string | null): void {
     clearTimer(code);
     emitState(io, room);
     try {
-        saveCantStopResults(room, winnerUserId, room.currentGameId);
+        saveCantStopResults(io, code, room, winnerUserId, room.currentGameId);
     } catch (e) {
         console.error('[CANT_STOP] saveResults failed', e);
     }

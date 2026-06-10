@@ -1,8 +1,11 @@
-import { saveAttempts, ScoreEntry } from '@kwizar/shared';
+import type { Server } from 'socket.io';
+import { saveAttemptsAndEmit, ScoreEntry } from '@kwizar/shared';
 import { CantStopRoom } from './types';
 import { isBot } from './game';
 
 export function saveCantStopResults(
+    io: Server,
+    code: string,
     room: CantStopRoom,
     winnerUserId: string | null,
     gameId: string,
@@ -21,5 +24,5 @@ export function saveCantStopResults(
         };
     });
 
-    saveAttempts('CANT_STOP', gameId, scores, vsBot);
+    saveAttemptsAndEmit(io, code, 'CANT_STOP', gameId, scores, vsBot);
 }
