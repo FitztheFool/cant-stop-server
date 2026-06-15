@@ -31,11 +31,12 @@ const lobbySocket = connectToLobby('cant-stop-server', 'cant_stop');
 
 // ── Configure from lobby ──────────────────────────────────────────────────────
 
-lobbySocket.on('cant_stop:configure', ({ lobbyId: code, players, options, fresh }: {
+lobbySocket.on('cant_stop:configure', ({ lobbyId: code, players, options, fresh, turnSeconds }: {
     lobbyId: string;
     players: any[];
     options?: { columnsToWin?: number };
     fresh?: boolean;
+    turnSeconds?: number | null;
 }, ack?: () => void) => {
     if (!code) { if (ack) ack(); return; }
     if (rooms[code] && !fresh && rooms[code].phase !== 'ended') {
@@ -45,6 +46,7 @@ lobbySocket.on('cant_stop:configure', ({ lobbyId: code, players, options, fresh 
     }
     const columnsToWin = options?.columnsToWin ?? DEFAULT_COLUMNS_TO_WIN;
     const room = createRoom(code, players, columnsToWin);
+    if (turnSeconds != null) room.turnDuration = turnSeconds;
     console.log(`[CANT_STOP] Room created: ${code} (${players.length} players, columnsToWin=${columnsToWin})`);
     rollAndStart(code);
     if (ack) ack();
